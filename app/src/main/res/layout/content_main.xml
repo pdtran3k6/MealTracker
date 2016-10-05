@@ -16,5 +16,6 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ahihi" />
+        android:text="@string/app_description"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large" />
 </RelativeLayout>
