@@ -1,67 +1,30 @@
 package com.example.phatd.mealtracker;
 
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.ContentResolver;
-import android.content.Context;
+import android.Manifest;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.IntentSender;
-import android.content.ServiceConnection;
-import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.content.res.AssetManager;
-import android.content.res.Configuration;
-import android.content.res.Resources;
-import android.database.DatabaseErrorHandler;
-import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.InputConfiguration;
-import android.hardware.camera2.params.OutputConfiguration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.UserHandle;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.test.mock.MockContext;
-import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.Surface;
 import android.view.View;
-import android.hardware.camera2.*;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
-
-import static android.app.PendingIntent.getActivity;
-
 
 public class MainActivity extends AppCompatActivity {
 
+    public static final int CAMERA_PERMISSION_REQUEST_CODE = 1234567;
     public int numTap = 1;
 
     @Override
@@ -76,18 +39,32 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (numTap == 2) {
-                    Toast.makeText(MainActivity.this, "You tapped twice",
-                            Toast.LENGTH_SHORT).show();
-                    //Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
+                        invokeTakePictureIntent();
+                    } else {
+                        String[] permissionRequest ={Manifest.permission.CAMERA};
+                        requestPermissions(permissionRequest, CAMERA_PERMISSION_REQUEST_CODE);
+                    }
                     numTap = 1;
-                }
-                else {
+                } else {
                     Toast.makeText(MainActivity.this, "Tap again to take photo of a meal",
                             Toast.LENGTH_SHORT).show();
                     numTap = 2;
                 }
             }
         });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                invokeTakePictureIntent();
+            } else {
+                Toast.makeText(this, "Can't take photo without permission", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     @Override
@@ -107,13 +84,13 @@ public class MainActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.contact_me) {
             String[] addresses = {"phatdtran3k6@gmail.com"};
-            Intent takePictureIntent = new Intent(Intent.ACTION_SENDTO);
-            takePictureIntent.setData(Uri.parse("mailto:"));
-            takePictureIntent.putExtra(Intent.EXTRA_EMAIL, addresses);
-            takePictureIntent.putExtra(Intent.EXTRA_SUBJECT, "SUGGESTION");
-            takePictureIntent.putExtra(Intent.EXTRA_TEXT, "Hi Phat, you're cute.");
-            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-                startActivity(takePictureIntent);
+            Intent sendEmail = new Intent(Intent.ACTION_SENDTO);
+            sendEmail.setData(Uri.parse("mailto:"));
+            sendEmail.putExtra(Intent.EXTRA_EMAIL, addresses);
+            sendEmail.putExtra(Intent.EXTRA_SUBJECT, "SUGGESTION");
+            sendEmail.putExtra(Intent.EXTRA_TEXT, "Hi Phat, you're cute.");
+            if (sendEmail.resolveActivity(getPackageManager()) != null) {
+                startActivity(sendEmail);
             }
         }
 
@@ -142,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
         return image;
     }
 
-    private void dispatchTakePictureIntent() {
+    private void invokeTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
         //Ensure that there's a camera activity to handle the intent
@@ -152,7 +129,6 @@ public class MainActivity extends AppCompatActivity {
             try {
                 photoFile = createImageFile();
             } catch (IOException ex) {
-                // Error occurred while creating the File
                 // TODO: Added a throw exception call
             }
 
