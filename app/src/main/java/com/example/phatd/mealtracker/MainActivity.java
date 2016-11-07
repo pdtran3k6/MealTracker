@@ -15,6 +15,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -33,6 +34,22 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        ImageView leftFoodThumbnail = (ImageView)findViewById(R.id.leftFoodThumbnail);
+        ImageView centerFoodThumbnail = (ImageView)findViewById(R.id.centerFoodThumbnail);
+        ImageView rightFoodThumbnail = (ImageView)findViewById(R.id.rightFoodThumbnail);
+
+        File foodThumbnailsDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File[] directoryListing = foodThumbnailsDir.listFiles();
+        if (directoryListing != null) {
+            for (File thumbnail : directoryListing) {
+
+            }
+        } else {
+            leftFoodThumbnail.setImageResource(R.drawable.me_swimming);
+            rightFoodThumbnail.setImageResource(R.drawable.me_swimming);
+            centerFoodThumbnail.setImageResource(R.drawable.me_swimming);
+        }
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.takePhotos);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -105,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
 
     private File createImageFile() throws IOException, IOException {
         // Create an image file name that is collision-resistant
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmm").format(new Date());
         String imageFileName = "Meal_" + timeStamp + "_";
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         File image = File.createTempFile(

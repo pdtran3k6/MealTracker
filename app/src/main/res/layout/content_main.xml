@@ -17,5 +17,34 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/app_description"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large" />
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:id="@+id/textView" />
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        app:srcCompat="@drawable/me_swimming"
+        android:id="@+id/centerFoodThumbnail"
+        android:scaleType="centerCrop"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true" />
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        app:srcCompat="@drawable/me_swimming"
+        android:id="@+id/rightFoodThumbnail"
+        android:scaleType="centerCrop"
+        android:layout_centerVertical="true"
+        android:layout_alignParentEnd="true" />
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        app:srcCompat="@drawable/me_swimming"
+        android:id="@+id/leftFoodThumbnail"
+        android:scaleType="centerCrop"
+        android:layout_alignTop="@+id/centerFoodThumbnail"
+        android:layout_alignParentStart="true" />
+
 </RelativeLayout>
