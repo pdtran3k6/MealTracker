@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Meal Tracker</string>
     <string name="contact_me">Contact me</string>
-    <string name="app_description">Tracking what you eat by simply taking a photo of the meal. This way, you will know why you haven\'t lost that extra 10lbs of fat despite spending invaluable time in the gym.</string>
+    <string name="app_description">What you ate/drank recently</string>
 </resources>
