@@ -21,25 +21,27 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import static android.R.attr.button;
-
 public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 1234567;
-    private int numTap = 1;
-    private int thumbnailCounter = 0;
+    private int numTaps_TakePhotos;
+    private int thumbnailCounter;
     private ImageView leftFoodThumbnail;
     private ImageView centerFoodThumbnail;
     private ImageView rightFoodThumbnail;
     private ImageView[] thumbnailsArray;
     private File foodThumbnailsDir;
     private File[] directoryListing;
-    private int lastThumbnailPosition = 0;
+    private int thirdMostRecentThumbnailIndex;
+    private int mostRecentThumbnailIndex;
+    private String[] filenameListing;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +50,47 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // Initialize numTaps_TakePhotos
+        numTaps_TakePhotos = 1;
+
+        // Get all images in folder and put it into ImageView holder
+        updateMealThumbnails();
+
+        // Refresh button setup
+        Button refreshButton = (Button) findViewById(R.id.refresh);
+        refreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                updateMealThumbnails();
+            }
+        });
+
+        // Clear-memory button setup
+        Button clearMemory = (Button) findViewById(R.id.clear_memory);
+        clearMemory.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                clearMemory();
+            }
+        });
+
+        FloatingActionButton takePhotos = (FloatingActionButton) findViewById(R.id.takePhotos);
+        takePhotos.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (numTaps_TakePhotos == 2) {
+                    handleCameraPermission();
+                    updateMealThumbnails();
+                } else {
+                    Toast.makeText(MainActivity.this, "Tap again to take photo of a meal",
+                            Toast.LENGTH_SHORT).show();
+                    numTaps_TakePhotos = 2;
+                }
+            }
+        });
+    }
+
+    private void thumbnailSetup() {
         // Set each thumbnail to its corresponding variable
         leftFoodThumbnail = (ImageView) findViewById(R.id.leftThumbnail);
         centerFoodThumbnail = (ImageView) findViewById(R.id.centerThumbnail);
@@ -56,70 +99,52 @@ public class MainActivity extends AppCompatActivity {
         // Put all thumbnails into an array
         thumbnailsArray = new ImageView[]
                 {leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail};
-
-        // Get directory path of existing thumbnails
-        foodThumbnailsDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        directoryListing = foodThumbnailsDir.listFiles();
-
-        // Put all thumbnails into thumbnail holder
-        putThumbnailIntoHolder(thumbnailsArray, directoryListing);
-
-        Button refreshButton = (Button) findViewById(R.id.refresh);
-        refreshButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                putThumbnailIntoHolder(thumbnailsArray, directoryListing);
-            }
-        });
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.takePhotos);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (numTap == 2) {
-                    if (checkSelfPermission(Manifest.permission.CAMERA)
-                            == PackageManager.PERMISSION_GRANTED){
-                        invokeTakePictureIntent();
-                    } else {
-                        String[] permissionRequest ={Manifest.permission.CAMERA};
-                        requestPermissions(permissionRequest, CAMERA_PERMISSION_REQUEST_CODE);
-                    }
-                    numTap = 1;
-                } else {
-                    Toast.makeText(MainActivity.this, "Tap again to take photo of a meal",
-                            Toast.LENGTH_SHORT).show();
-                    numTap = 2;
-                }
-            }
-        });
     }
 
-    private void putThumbnailIntoHolder(ImageView[] thumbnailsArray, File[] directoryListing) {
-        if (directoryListing != null) {
-            if (directoryListing.length > 3) {
-                lastThumbnailPosition = directoryListing.length - 3;
-            }
-            for (int i = directoryListing.length - 1; i >= lastThumbnailPosition; i--) {
-                Glide.with(this).load(directoryListing[i]).into(thumbnailsArray[thumbnailCounter]);
-                thumbnailCounter++;
-            }
+    private void thumbnailDirectorySetup() {
+        // Get directory path & generate a File[] that contains all meal thumbnails
+        foodThumbnailsDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        directoryListing = foodThumbnailsDir.listFiles();
+    }
+
+    private void thumbnailIndexSetup() {
+        thumbnailCounter = 0;
+        mostRecentThumbnailIndex = directoryListing.length - 1;
+        if (directoryListing.length > 3) {
+            thirdMostRecentThumbnailIndex = directoryListing.length - 3;
         } else {
-            leftFoodThumbnail.setImageResource(R.drawable.me_swimming);
-            rightFoodThumbnail.setImageResource(R.drawable.me_swimming);
-            centerFoodThumbnail.setImageResource(R.drawable.me_swimming);
+            thirdMostRecentThumbnailIndex = 0;
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                invokeTakePictureIntent();
-            } else {
-                Toast.makeText(this, "Can't take photo without permission", Toast.LENGTH_LONG).show();
+    private void updateMealThumbnails() {
+        thumbnailSetup();
+        thumbnailDirectorySetup();
+
+        if (directoryListing.length != 0) {
+            thumbnailIndexSetup();
+
+            // Start from left to right, add 3 most recent thumbnails and display them in ImageView
+            for (int i = mostRecentThumbnailIndex; i >= thirdMostRecentThumbnailIndex; i--) {
+                Glide.with(this).load(directoryListing[i]).into(thumbnailsArray[thumbnailCounter]);
+                thumbnailCounter++;
             }
+        }
+
+        // If there's nothing in the thumbnail folder, set all ImageView holders to transparent
+        else {
+            for (ImageView thumbnail : thumbnailsArray) {
+                thumbnail.setImageResource(android.R.color.transparent);
+            }
+        }
+    }
+
+    private void clearMemory() {
+        try {
+            // Clear directory using commons-io library from Apache (v2.5)
+            FileUtils.cleanDirectory(foodThumbnailsDir);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -137,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
+        // Contact me option
         if (id == R.id.contact_me) {
             String[] addresses = {"phatdtran3k6@gmail.com"};
             Intent sendEmail = new Intent(Intent.ACTION_SENDTO);
@@ -153,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    //region TAKE MEAL PHOTOS
     //Request to use camera app for taking photos
     static final int REQUEST_IMAGE_CAPTURE = 1;
 
@@ -198,4 +224,35 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                invokeTakePictureIntent();
+            } else {
+                Toast.makeText(this, "Can't take photo without permission", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void handleCameraPermission() {
+        // If app has permission to use camera, take pictures of meals
+        if (checkSelfPermission(Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED){
+            invokeTakePictureIntent();
+        }
+
+        // If app doesn't have permission, ask for camera permission from user
+        else {
+            String[] permissionRequest ={Manifest.permission.CAMERA};
+            requestPermissions(permissionRequest, CAMERA_PERMISSION_REQUEST_CODE);
+        }
+
+        // Reset numTaps_TakePhotos to 1
+        numTaps_TakePhotos = 1;
+    }
+    //endregion
 }

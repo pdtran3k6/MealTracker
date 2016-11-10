@@ -52,8 +52,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/refresh"
+        android:layout_marginBottom="177dp"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="185dp" />
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:text="Clear Memory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/clear_memory"
+        android:layout_marginTop="52dp"
+        android:layout_below="@+id/textView"
+        android:layout_centerHorizontal="true" />
 
 </RelativeLayout>
