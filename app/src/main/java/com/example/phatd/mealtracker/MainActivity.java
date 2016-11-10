@@ -15,18 +15,31 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.bumptech.glide.Glide;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import static android.R.attr.button;
+
 public class MainActivity extends AppCompatActivity {
 
-    public static final int CAMERA_PERMISSION_REQUEST_CODE = 1234567;
-    public int numTap = 1;
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 1234567;
+    private int numTap = 1;
+    private int thumbnailCounter = 0;
+    private ImageView leftFoodThumbnail;
+    private ImageView centerFoodThumbnail;
+    private ImageView rightFoodThumbnail;
+    private ImageView[] thumbnailsArray;
+    private File foodThumbnailsDir;
+    private File[] directoryListing;
+    private int lastThumbnailPosition = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,28 +48,37 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        ImageView leftFoodThumbnail = (ImageView)findViewById(R.id.leftFoodThumbnail);
-        ImageView centerFoodThumbnail = (ImageView)findViewById(R.id.centerFoodThumbnail);
-        ImageView rightFoodThumbnail = (ImageView)findViewById(R.id.rightFoodThumbnail);
+        // Set each thumbnail to its corresponding variable
+        leftFoodThumbnail = (ImageView) findViewById(R.id.leftThumbnail);
+        centerFoodThumbnail = (ImageView) findViewById(R.id.centerThumbnail);
+        rightFoodThumbnail = (ImageView) findViewById(R.id.rightThumbnail);
 
-        File foodThumbnailsDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File[] directoryListing = foodThumbnailsDir.listFiles();
-        if (directoryListing != null) {
-            for (File thumbnail : directoryListing) {
+        // Put all thumbnails into an array
+        thumbnailsArray = new ImageView[]
+                {leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail};
 
+        // Get directory path of existing thumbnails
+        foodThumbnailsDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        directoryListing = foodThumbnailsDir.listFiles();
+
+        // Put all thumbnails into thumbnail holder
+        putThumbnailIntoHolder(thumbnailsArray, directoryListing);
+
+        Button refreshButton = (Button) findViewById(R.id.refresh);
+        refreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                putThumbnailIntoHolder(thumbnailsArray, directoryListing);
             }
-        } else {
-            leftFoodThumbnail.setImageResource(R.drawable.me_swimming);
-            rightFoodThumbnail.setImageResource(R.drawable.me_swimming);
-            centerFoodThumbnail.setImageResource(R.drawable.me_swimming);
-        }
+        });
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.takePhotos);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (numTap == 2) {
-                    if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
+                    if (checkSelfPermission(Manifest.permission.CAMERA)
+                            == PackageManager.PERMISSION_GRANTED){
                         invokeTakePictureIntent();
                     } else {
                         String[] permissionRequest ={Manifest.permission.CAMERA};
@@ -72,8 +94,25 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void putThumbnailIntoHolder(ImageView[] thumbnailsArray, File[] directoryListing) {
+        if (directoryListing != null) {
+            if (directoryListing.length > 3) {
+                lastThumbnailPosition = directoryListing.length - 3;
+            }
+            for (int i = directoryListing.length - 1; i >= lastThumbnailPosition; i--) {
+                Glide.with(this).load(directoryListing[i]).into(thumbnailsArray[thumbnailCounter]);
+                thumbnailCounter++;
+            }
+        } else {
+            leftFoodThumbnail.setImageResource(R.drawable.me_swimming);
+            rightFoodThumbnail.setImageResource(R.drawable.me_swimming);
+            centerFoodThumbnail.setImageResource(R.drawable.me_swimming);
+        }
+    }
+
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -146,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 photoFile = createImageFile();
             } catch (IOException ex) {
-                // TODO: Added a throw exception call
+                ex.printStackTrace();
             }
 
             // Continue only if the File was successfully created

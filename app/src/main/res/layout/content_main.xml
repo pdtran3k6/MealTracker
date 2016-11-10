@@ -13,38 +13,47 @@
     tools:context="com.example.phatd.mealtracker.MainActivity"
     tools:showIn="@layout/activity_main">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/app_description"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        android:id="@+id/textView" />
-
     <ImageView
         android:layout_width="100dp"
         android:layout_height="100dp"
-        app:srcCompat="@drawable/me_swimming"
-        android:id="@+id/centerFoodThumbnail"
+        android:id="@+id/rightThumbnail"
         android:scaleType="centerCrop"
-        android:layout_centerVertical="true"
-        android:layout_centerHorizontal="true" />
-
-    <ImageView
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        app:srcCompat="@drawable/me_swimming"
-        android:id="@+id/rightFoodThumbnail"
-        android:scaleType="centerCrop"
-        android:layout_centerVertical="true"
+        android:layout_alignTop="@+id/centerThumbnail"
         android:layout_alignParentEnd="true" />
 
     <ImageView
         android:layout_width="100dp"
         android:layout_height="100dp"
-        app:srcCompat="@drawable/me_swimming"
-        android:id="@+id/leftFoodThumbnail"
+        android:id="@+id/leftThumbnail"
         android:scaleType="centerCrop"
-        android:layout_alignTop="@+id/centerFoodThumbnail"
+        android:layout_alignTop="@+id/centerThumbnail"
         android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_description"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:id="@+id/textView"
+        android:layout_above="@+id/refresh"
+        android:layout_centerHorizontal="true" />
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:id="@+id/centerThumbnail"
+        android:scaleType="centerCrop"
+        android:layout_above="@+id/textView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="19dp" />
+
+    <Button
+        android:text="Refresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/refresh"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="185dp" />
 
 </RelativeLayout>
