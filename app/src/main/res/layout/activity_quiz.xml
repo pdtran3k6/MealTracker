@@ -1,26 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/content_main"
+    android:id="@+id/activity_quiz"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.example.phatd.mealtracker.MainActivity"
-    tools:showIn="@layout/activity_main">
+    tools:context="com.example.phatd.mealtracker.QuizActivity">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/app_description"
+        android:id="@+id/question"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        android:id="@+id/textView"
-        android:layout_marginTop="70dp"
-        android:layout_marginBottom="18dp"
+        android:text="What did you eat"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="68dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/question_DayAndTime"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:layout_marginTop="10dp"
+        android:text="on Monday at 7:38 PM?"
+        android:textSize="32dp"
+        android:layout_below="@+id/question"
         android:layout_centerHorizontal="true" />
 
     <ImageView
@@ -44,24 +52,16 @@
         android:layout_height="100dp"
         android:id="@+id/centerThumbnail"
         android:scaleType="centerCrop"
-        android:layout_below="@id/textView"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/question_DayAndTime"
+        android:layout_marginTop="25dp" />
 
     <Button
-        android:text="Refresh"
-        android:layout_width="match_parent"
+        android:text="I don't know"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/refresh"
         android:layout_below="@+id/centerThumbnail"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="18dp" />
-
-    <Button
-        android:text="Clear Memory"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/clear_memory"
-        android:layout_below="@+id/refresh"
-        android:layout_alignParentStart="true" />
-
+        android:layout_marginTop="30dp"
+        android:id="@+id/idontknow" />
 </RelativeLayout>

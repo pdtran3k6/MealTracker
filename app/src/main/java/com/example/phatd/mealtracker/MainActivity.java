@@ -74,20 +74,36 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        FloatingActionButton takePhotos = (FloatingActionButton) findViewById(R.id.takePhotos);
-        takePhotos.setOnClickListener(new View.OnClickListener() {
+        FloatingActionButton takePhotosButton = (FloatingActionButton) findViewById(R.id.takePhotos);
+        takePhotosButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                if (numTaps_TakePhotos == 2) {
-                    handleCameraPermission();
-                    updateMealThumbnails();
-                } else {
-                    Toast.makeText(MainActivity.this, "Tap again to take photo of a meal",
-                            Toast.LENGTH_SHORT).show();
-                    numTaps_TakePhotos = 2;
-                }
+            public void onClick(View view) {checkNumTapsToOpenCamera();
             }
         });
+
+        FloatingActionButton getQuizButton = (FloatingActionButton) findViewById(R.id.getQuiz);
+        getQuizButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getQuiz();
+            }
+        });
+    }
+
+    private void getQuiz() {
+        Intent goToQuizActivity = new Intent(this, QuizActivity.class);
+        startActivity(goToQuizActivity);
+    }
+
+    private void checkNumTapsToOpenCamera() {
+        if (numTaps_TakePhotos == 2) {
+            handleCameraPermission();
+            updateMealThumbnails();
+        } else {
+            Toast.makeText(MainActivity.this, "Tap again to take photo of a meal",
+                    Toast.LENGTH_SHORT).show();
+            numTaps_TakePhotos = 2;
+        }
     }
 
     private void thumbnailSetup() {
@@ -178,7 +194,6 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    //region TAKE MEAL PHOTOS
     //Request to use camera app for taking photos
     static final int REQUEST_IMAGE_CAPTURE = 1;
 
@@ -254,5 +269,4 @@ public class MainActivity extends AppCompatActivity {
         // Reset numTaps_TakePhotos to 1
         numTaps_TakePhotos = 1;
     }
-    //endregion
 }
