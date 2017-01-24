@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "148749972747",
+    "firebase_url": "https://mealtracker-2dcb8.firebaseio.com",
+    "project_id": "mealtracker-2dcb8",
+    "storage_bucket": "mealtracker-2dcb8.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:148749972747:android:113f60ec04cb1d9b",
+        "android_client_info": {
+          "package_name": "com.example.phatd.mealtracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "148749972747-omeftj3a4qhfccq7a29lj7atae2ha002.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.phatd.mealtracker",
+            "certificate_hash": "3E04A8C1C0F301D79C01958A4997D0C46229FD5A"
+          }
+        },
+        {
+          "client_id": "148749972747-ur55015l1sq42hu17omabu327dppbd95.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCf5GO1JOTmanhg-YYcfHSHlpUsWDJljh4"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "148749972747-ur55015l1sq42hu17omabu327dppbd95.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
