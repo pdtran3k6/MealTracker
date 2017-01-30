@@ -1,7 +1,6 @@
 package com.example.phatd.mealtracker;
 
 import android.Manifest;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -28,13 +27,13 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import org.apache.commons.io.comparator.LastModifiedFileComparator;
+
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -65,14 +64,18 @@ public class MainActivity extends AppCompatActivity {
         Button syncButton = (Button) findViewById(R.id.sync);
         syncButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) { syncPhotos(); }
+            public void onClick(View view) {
+                syncPhotos();
+            }
         });
 
         // Clear-memory button setup
         Button clearMemory = (Button) findViewById(R.id.clear_memory);
         clearMemory.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) { clearMemory(); }
+            public void onClick(View view) {
+                clearMemory();
+            }
         });
 
         // Take-photo button setup
@@ -80,14 +83,18 @@ public class MainActivity extends AppCompatActivity {
                 (FloatingActionButton) findViewById(R.id.takePhotos);
         takePhotosButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {checkNumTapsToOpenCamera();}
+            public void onClick(View view) {
+                checkNumTapsToOpenCamera();
+            }
         });
 
         // Get-quiz button setup
         FloatingActionButton getQuizButton = (FloatingActionButton) findViewById(R.id.getQuiz);
         getQuizButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) { goToQuiz(); }
+            public void onClick(View view) {
+                goToQuiz();
+            }
         });
 
         // Get all images in folder and put it into ImageView holder
@@ -109,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
     // Upload missing photos (if any) to firebase. Otherwise, pop up a toast
     private void syncPhotos() {
         if (foodThumbnailsDir.listFiles().length != 0) {
-            for(File f : foodThumbnailsDir.listFiles()) {
+            for (File f : foodThumbnailsDir.listFiles()) {
                 Uri photoURI = FileProvider.getUriForFile(this,
                         "com.example.phatd.mealtracker.fileprovider",
                         f);
@@ -123,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
     // Delete all photos in the directory
     private void clearMemory() {
         if (numTaps_clearMem == 2) {
-            for(File f : foodThumbnailsDir.listFiles())
+            for (File f : foodThumbnailsDir.listFiles())
                 f.delete();
             numTaps_clearMem = 1;
             updateMealThumbnails();
@@ -162,11 +169,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Find the directory that stores photos, then
-    // proceed to list all photos (if they exist)
-    private void thumbnailDirectorySetup() {
+    // proceed to sort all photos (if they exist)
+    private void sortMealPhotos() {
         // Get directory path & generate a File[] that contains all meal thumbnails
         foodThumbnailsDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         directoryListing = foodThumbnailsDir.listFiles();
+
+        Arrays.sort(directoryListing, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
     }
 
     // Set up indexes for the 3 most recent meal photos
@@ -185,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
     // If there are no photos, display nothing
     private void updateMealThumbnails() {
         thumbnailSetup();
-        thumbnailDirectorySetup();
+        sortMealPhotos();
 
         if (directoryListing.length != 0) {
             thumbnailIndexSetup();
@@ -260,34 +269,34 @@ public class MainActivity extends AppCompatActivity {
         StorageReference mealRef = mStorageRef.child("meals/" + photoFile.getName());
 
         mealRef.putFile(photoURI)
-            .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                @Override
-                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                    // Get a URL to the uploaded content
-                    Uri downloadUrl = taskSnapshot.getDownloadUrl();
-                    Log.i("download url", downloadUrl.toString());
-                }
-            })
-            .addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception e) {
-                    // Handle unsuccessful uploads
-                    Toast.makeText(getApplicationContext(),
-                            e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
-                }
-            });
+                .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                        // Get a URL to the uploaded content
+                        Uri downloadUrl = taskSnapshot.getDownloadUrl();
+                        Log.i("download url", downloadUrl.toString());
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Handle unsuccessful uploads
+                        Toast.makeText(getApplicationContext(),
+                                e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
     private void handleCameraPermission() {
         // If app has permission to use camera, take pictures of meals
         if (checkSelfPermission(Manifest.permission.CAMERA) ==
-                PackageManager.PERMISSION_GRANTED){
+                PackageManager.PERMISSION_GRANTED) {
             invokeTakePictureIntent();
         }
 
         // If app doesn't have permission, ask for camera permission from user
         else {
-            String[] permissionRequest ={Manifest.permission.CAMERA};
+            String[] permissionRequest = {Manifest.permission.CAMERA};
             requestPermissions(permissionRequest, CAMERA_PERMISSION_REQUEST_CODE);
         }
 
