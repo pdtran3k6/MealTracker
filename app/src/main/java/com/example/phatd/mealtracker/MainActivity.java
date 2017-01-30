@@ -1,6 +1,7 @@
 package com.example.phatd.mealtracker;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -12,6 +13,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,28 +22,33 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
-
-import org.apache.commons.io.FileUtils;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 1234567;
-    private int numTaps_TakePhotos;
-    private int thumbnailCounter;
-    private ImageView leftFoodThumbnail;
-    private ImageView centerFoodThumbnail;
-    private ImageView rightFoodThumbnail;
+
+    private ImageView leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail;
     private ImageView[] thumbnailsArray;
+
     private File foodThumbnailsDir;
     private File[] directoryListing;
-    private int thirdMostRecentThumbnailIndex;
-    private int mostRecentThumbnailIndex;
-    private String[] filenameListing;
+    private int thirdMostRecentThumbnailIndex, mostRecentThumbnailIndex,
+            thumbnailCounter, numTaps_clearMem, numTaps_takePhotos;
+
+    private StorageReference mStorageRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,62 +57,99 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Initialize numTaps_TakePhotos
-        numTaps_TakePhotos = 1;
-
-        // Get all images in folder and put it into ImageView holder
-        updateMealThumbnails();
+        mStorageRef = FirebaseStorage.getInstance().getReference();
+        numTaps_takePhotos = 1; // Initialize numTaps_takePhotos
+        numTaps_clearMem = 1; // Initialize numTaps_clearMem
 
         // Refresh button setup
-        Button refreshButton = (Button) findViewById(R.id.refresh);
-        refreshButton.setOnClickListener(new View.OnClickListener() {
+        Button syncButton = (Button) findViewById(R.id.sync);
+        syncButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                updateMealThumbnails();
-            }
+            public void onClick(View view) { syncPhotos(); }
         });
 
         // Clear-memory button setup
         Button clearMemory = (Button) findViewById(R.id.clear_memory);
         clearMemory.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                clearMemory();
-            }
+            public void onClick(View view) { clearMemory(); }
         });
 
-        FloatingActionButton takePhotosButton = (FloatingActionButton) findViewById(R.id.takePhotos);
+        // Take-photo button setup
+        FloatingActionButton takePhotosButton =
+                (FloatingActionButton) findViewById(R.id.takePhotos);
         takePhotosButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {checkNumTapsToOpenCamera();
-            }
+            public void onClick(View view) {checkNumTapsToOpenCamera();}
         });
 
+        // Get-quiz button setup
         FloatingActionButton getQuizButton = (FloatingActionButton) findViewById(R.id.getQuiz);
         getQuizButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                getQuiz();
-            }
+            public void onClick(View view) { goToQuiz(); }
         });
+
+        // Get all images in folder and put it into ImageView holder
+        updateMealThumbnails();
     }
 
-    private void getQuiz() {
-        Intent goToQuizActivity = new Intent(this, QuizActivity.class);
-        startActivity(goToQuizActivity);
+    //region Functionalities for all buttons
+    // Redirect to QuizActivity
+    private void goToQuiz() {
+        if (directoryListing.length != 0) {
+            Intent goToQuizActivity = new Intent(this, QuizActivity.class);
+            startActivity(goToQuizActivity);
+        } else {
+            Toast.makeText(this, "Not enough meal photos to generate questions",
+                    Toast.LENGTH_SHORT).show();
+        }
     }
 
+    // Upload missing photos (if any) to firebase. Otherwise, pop up a toast
+    private void syncPhotos() {
+        if (foodThumbnailsDir.listFiles().length != 0) {
+            for(File f : foodThumbnailsDir.listFiles()) {
+                Uri photoURI = FileProvider.getUriForFile(this,
+                        "com.example.phatd.mealtracker.fileprovider",
+                        f);
+                uploadPhotoToFirebase(f, photoURI);
+            }
+        } else {
+            Toast.makeText(this, "You don't have any meal photos", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    // Delete all photos in the directory
+    private void clearMemory() {
+        if (numTaps_clearMem == 2) {
+            for(File f : foodThumbnailsDir.listFiles())
+                f.delete();
+            numTaps_clearMem = 1;
+            updateMealThumbnails();
+        } else {
+            Toast.makeText(MainActivity.this, "Tap again to clear memory",
+                    Toast.LENGTH_SHORT).show();
+            numTaps_clearMem = 2;
+            // TODO: Add delay for resetting the numTaps_clearMem
+        }
+    }
+
+    // Tap twice to take photo of meal
     private void checkNumTapsToOpenCamera() {
-        if (numTaps_TakePhotos == 2) {
+        if (numTaps_takePhotos == 2) {
             handleCameraPermission();
             updateMealThumbnails();
         } else {
             Toast.makeText(MainActivity.this, "Tap again to take photo of a meal",
                     Toast.LENGTH_SHORT).show();
-            numTaps_TakePhotos = 2;
+            numTaps_takePhotos = 2;
         }
     }
+    //endregion
 
+    //region Display meals thumbnails
+    // Set up display thumbnail
     private void thumbnailSetup() {
         // Set each thumbnail to its corresponding variable
         leftFoodThumbnail = (ImageView) findViewById(R.id.leftThumbnail);
@@ -117,12 +161,16 @@ public class MainActivity extends AppCompatActivity {
                 {leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail};
     }
 
+    // Find the directory that stores photos, then
+    // proceed to list all photos (if they exist)
     private void thumbnailDirectorySetup() {
         // Get directory path & generate a File[] that contains all meal thumbnails
         foodThumbnailsDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         directoryListing = foodThumbnailsDir.listFiles();
     }
 
+    // Set up indexes for the 3 most recent meal photos
+    // If there are less than 3 photos, use all of them
     private void thumbnailIndexSetup() {
         thumbnailCounter = 0;
         mostRecentThumbnailIndex = directoryListing.length - 1;
@@ -133,6 +181,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // Load all photos into thumbnail holders
+    // If there are no photos, display nothing
     private void updateMealThumbnails() {
         thumbnailSetup();
         thumbnailDirectorySetup();
@@ -140,9 +190,13 @@ public class MainActivity extends AppCompatActivity {
         if (directoryListing.length != 0) {
             thumbnailIndexSetup();
 
-            // Start from left to right, add 3 most recent thumbnails and display them in ImageView
+            // Start from left to right, add the most recent thumbnail
+            // first to the third most recent thumbnail last (if exists)
+            // and display them in ImageView
             for (int i = mostRecentThumbnailIndex; i >= thirdMostRecentThumbnailIndex; i--) {
-                Glide.with(this).load(directoryListing[i]).into(thumbnailsArray[thumbnailCounter]);
+                Glide.with(this).
+                        load(directoryListing[i]).
+                        into(thumbnailsArray[thumbnailCounter]);
                 thumbnailCounter++;
             }
         }
@@ -154,15 +208,95 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+    //endregion
 
-    private void clearMemory() {
-        try {
-            // Clear directory using commons-io library from Apache (v2.5)
-            FileUtils.cleanDirectory(foodThumbnailsDir);
-        } catch (IOException e) {
-            e.printStackTrace();
+    //region Capture photos
+    //Save full-sized photos on the phone
+    String mCurrentPhotoPath;
+
+    // Create image file for meal
+    private File createImageFile() throws IOException {
+        // Create an image file name that is collision-resistant
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmm").format(new Date());
+        String imageFileName = "Meal_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,   //prefix
+                ".jpg",          //suffix
+                storageDir       //directory
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
+        return image;
+    }
+
+    // Capture image of meal
+    private void invokeTakePictureIntent() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+        //Ensure that there's a camera activity to handle the intent
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+                Uri photoURI = FileProvider.getUriForFile(this,
+                        "com.example.phatd.mealtracker.fileprovider",
+                        photoFile);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                startActivityForResult(takePictureIntent, RESULT_OK);
+            }
         }
     }
+
+    private void uploadPhotoToFirebase(File photoFile, Uri photoURI) {
+        StorageReference mealRef = mStorageRef.child("meals/" + photoFile.getName());
+
+        mealRef.putFile(photoURI)
+            .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    // Get a URL to the uploaded content
+                    Uri downloadUrl = taskSnapshot.getDownloadUrl();
+                    Log.i("download url", downloadUrl.toString());
+                }
+            })
+            .addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    // Handle unsuccessful uploads
+                    Toast.makeText(getApplicationContext(),
+                            e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+    }
+
+    private void handleCameraPermission() {
+        // If app has permission to use camera, take pictures of meals
+        if (checkSelfPermission(Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED){
+            invokeTakePictureIntent();
+        }
+
+        // If app doesn't have permission, ask for camera permission from user
+        else {
+            String[] permissionRequest ={Manifest.permission.CAMERA};
+            requestPermissions(permissionRequest, CAMERA_PERMISSION_REQUEST_CODE);
+        }
+
+        // Reset numTaps_takePhotos to 1
+        numTaps_takePhotos = 1;
+    }
+    //endregion
+
+    // region Set up menu, permissions, etc.
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -194,52 +328,6 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    //Request to use camera app for taking photos
-    static final int REQUEST_IMAGE_CAPTURE = 1;
-
-    //Save full-sized photos on the phone
-    String mCurrentPhotoPath;
-
-    private File createImageFile() throws IOException, IOException {
-        // Create an image file name that is collision-resistant
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmm").format(new Date());
-        String imageFileName = "Meal_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,   //prefix
-                ".jpg",          //suffix
-                storageDir       //directory
-        );
-
-        // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
-        return image;
-    }
-
-    private void invokeTakePictureIntent() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
-        //Ensure that there's a camera activity to handle the intent
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            // Create the File where the photo should go
-            File photoFile = null;
-            try {
-                photoFile = createImageFile();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-
-            // Continue only if the File was successfully created
-            if (photoFile != null) {
-                Uri photoURI = FileProvider.getUriForFile(this,
-                        "com.example.phatd.mealtracker.fileprovider",
-                        photoFile);
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                startActivityForResult(takePictureIntent, RESULT_OK);
-            }
-        }
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
@@ -248,25 +336,10 @@ public class MainActivity extends AppCompatActivity {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 invokeTakePictureIntent();
             } else {
-                Toast.makeText(this, "Can't take photo without permission", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Can't take photo without permission",
+                        Toast.LENGTH_LONG).show();
             }
         }
     }
-
-    private void handleCameraPermission() {
-        // If app has permission to use camera, take pictures of meals
-        if (checkSelfPermission(Manifest.permission.CAMERA) ==
-                PackageManager.PERMISSION_GRANTED){
-            invokeTakePictureIntent();
-        }
-
-        // If app doesn't have permission, ask for camera permission from user
-        else {
-            String[] permissionRequest ={Manifest.permission.CAMERA};
-            requestPermissions(permissionRequest, CAMERA_PERMISSION_REQUEST_CODE);
-        }
-
-        // Reset numTaps_TakePhotos to 1
-        numTaps_TakePhotos = 1;
-    }
+    //endregion
 }

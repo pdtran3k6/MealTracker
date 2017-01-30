@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:id="@+id/question"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        android:text="What did you eat"
+        android:text="@string/static_quiz"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
         android:layout_marginTop="68dp" />
@@ -26,10 +26,9 @@
         android:id="@+id/question_DayAndTime"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         android:layout_marginTop="10dp"
-        android:text="on Monday at 7:38 PM?"
         android:textSize="32dp"
         android:layout_below="@+id/question"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="false" />
 
     <ImageView
         android:layout_width="100dp"
@@ -57,7 +56,7 @@
         android:layout_marginTop="25dp" />
 
     <Button
-        android:text="I don't know"
+        android:text="@string/idk_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/centerThumbnail"

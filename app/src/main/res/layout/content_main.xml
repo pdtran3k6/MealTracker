@@ -16,7 +16,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/app_description"
+        android:text="@string/static_main"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         android:id="@+id/textView"
         android:layout_marginTop="70dp"
@@ -48,20 +48,20 @@
         android:layout_centerHorizontal="true" />
 
     <Button
-        android:text="Refresh"
+        android:text="@string/sync_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/refresh"
+        android:id="@+id/sync"
         android:layout_below="@+id/centerThumbnail"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="18dp" />
 
     <Button
-        android:text="Clear Memory"
+        android:text="@string/clr_mem_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/clear_memory"
-        android:layout_below="@+id/refresh"
+        android:layout_below="@+id/sync"
         android:layout_alignParentStart="true" />
 
 </RelativeLayout>
