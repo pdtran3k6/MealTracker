@@ -31,6 +31,9 @@ public class QuizActivity extends AppCompatActivity {
     private File correctPhoto;
     private int correctIndex;
 
+    private int green;
+    private int red;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,6 +45,7 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 revealCorrectAnswer(-1);
+                updatePoints();
             }
         });
 
@@ -57,22 +61,24 @@ public class QuizActivity extends AppCompatActivity {
 
     private void revealCorrectAnswer(int chosenIndex) {
         int displayPos = correctIndex + 1;
+        red = Color.argb(70, 255, 61, 61);
+        green = Color.argb(70, 26, 255, 0);
+
         if (chosenIndex == -1) {
             Toast.makeText(this, "This is the correct answer. " +
-                    "Be more aware of what you eat next time",
-                    Toast.LENGTH_LONG).show();
-            thumbnailsArray[correctIndex].setColorFilter(Color.argb(70, 26, 255, 0));
+                            "Be more aware of what you eat next time",
+                    Toast.LENGTH_SHORT).show();
+            thumbnailsArray[correctIndex].setColorFilter(green);
         } else if (chosenIndex == correctIndex) {
             Toast.makeText(this, "Congratulations. It's the correct answer",
-                    Toast.LENGTH_LONG).show();
-            thumbnailsArray[chosenIndex].setColorFilter(Color.argb(70, 26, 255, 0));
+                    Toast.LENGTH_SHORT).show();
+            thumbnailsArray[chosenIndex].setColorFilter(green);
         } else {
             Toast.makeText(this, "The correct answer was photo number " + displayPos,
-                    Toast.LENGTH_LONG).show();
-            thumbnailsArray[chosenIndex].setColorFilter(Color.argb(70, 255, 61, 61));
-            thumbnailsArray[correctIndex].setColorFilter(Color.argb(70, 26, 255, 0));
+                    Toast.LENGTH_SHORT).show();
+            thumbnailsArray[chosenIndex].setColorFilter(red);
+            thumbnailsArray[correctIndex].setColorFilter(green);
         }
-        updatePoints();
     }
 
     private void updatePoints() {
@@ -83,31 +89,64 @@ public class QuizActivity extends AppCompatActivity {
         // Get directory path & generate a File[] that contains all meal thumbnails
         foodThumbnailsDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         directoryListing = foodThumbnailsDir.listFiles();
-        if (directoryListing.length != 0) {
-            correctIndex = ThreadLocalRandom.current().nextInt(0, directoryListing.length);
-            correctPhoto = directoryListing[correctIndex];
 
-            long millisec = correctPhoto.lastModified();
-            Date mealCapturedTime = new Date(millisec);
-            String dayName = new SimpleDateFormat("EEE").format(mealCapturedTime);
-            String date = new SimpleDateFormat("dd/MM").format(mealCapturedTime);
-            String hourMin = new SimpleDateFormat("hh:mm aaa").format(mealCapturedTime);
+        correctIndex = ThreadLocalRandom.current().nextInt(0, directoryListing.length);
+        correctPhoto = directoryListing[correctIndex];
 
-            question_DayAndTime.setText("On " + dayName + " " + date + " \nat " + hourMin + "?");
-        } else {
-            Toast.makeText(this, "Not enough photos to generate questions",
-                    Toast.LENGTH_SHORT).show();
-        }
+        long millisec = correctPhoto.lastModified();
+        Date mealCapturedTime = new Date(millisec);
+        String dayName = new SimpleDateFormat("EEE").format(mealCapturedTime);
+        String date = new SimpleDateFormat("dd/MM").format(mealCapturedTime);
+        String hourMin = new SimpleDateFormat("hh:mm aaa").format(mealCapturedTime);
+
+        question_DayAndTime.setText("on " + dayName + " " + date + " \nat " + hourMin + "?");
     }
 
     // Set up display thumbnail
     private void generateThumbnails() {
+        setupThumbnails();
+
+        int totalNumPhotos = directoryListing.length;
+        Integer[] randomPhotoIndexes = new Integer[totalNumPhotos];
+
+        // Populate all meal photos' indexes to the array
+        for (int i = 0; i < totalNumPhotos; i++) {
+            randomPhotoIndexes[i] = i;
+        }
+
+        // Randomize all elements
+        Collections.shuffle(Arrays.asList(randomPhotoIndexes));
+
+        for (int k = 0; k < 3; k++) {
+            // Loop through the first 3 values of randomPhotoIndexes
+            // If the none of them is the correctIndex,
+            // put correctIndex in any of the first 3 values
+            if (randomPhotoIndexes[k] == correctIndex) {
+                correctIndex = k;
+                break;
+            } else if (k == 2) {
+                int pos = ThreadLocalRandom.current().nextInt(0, 3);
+                randomPhotoIndexes[pos] = correctIndex;
+                correctIndex = pos;
+            }
+        }
+
+        // Populate thumbnailsArray with random meal photos
+        for (int i = 0; i < 3; i++) {
+            Glide.with(this).
+                    load(directoryListing[randomPhotoIndexes[i]]).
+                    into(thumbnailsArray[i]);
+        }
+    }
+
+    private void setupThumbnails() {
         // Set each thumbnail to its corresponding variable
         leftFoodThumbnail = (ImageView) findViewById(R.id.leftThumbnail);
         leftFoodThumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 revealCorrectAnswer(0);
+                updatePoints();
             }
         });
         centerFoodThumbnail = (ImageView) findViewById(R.id.centerThumbnail);
@@ -115,6 +154,7 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 revealCorrectAnswer(1);
+                updatePoints();
             }
         });
         rightFoodThumbnail = (ImageView) findViewById(R.id.rightThumbnail);
@@ -122,48 +162,12 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 revealCorrectAnswer(2);
+                updatePoints();
             }
         });
 
         // Put all thumbnails into an array
         thumbnailsArray = new ImageView[]
                 {leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail};
-
-        int totalNumPhotos = directoryListing.length;
-        if (totalNumPhotos >= 3) {
-            Integer[] randomPhotoIndexes = new Integer[totalNumPhotos];
-
-            // Populate all meal photos' indexes to the array
-            for (int i = 0; i < totalNumPhotos; i++) {
-                randomPhotoIndexes[i] = i;
-            }
-
-            // Randomize all elements
-            Collections.shuffle(Arrays.asList(randomPhotoIndexes));
-
-            for (int k = 0; k < 3; k++) {
-                // Loop through the first 3 values of randomPhotoIndexes
-                // If the none of them is the correctIndex,
-                // put correctIndex in any of the first 3 values
-                if (randomPhotoIndexes[k] == correctIndex) {
-                    correctIndex = k;
-                    break;
-                } else if (k == 2) {
-                    int pos = ThreadLocalRandom.current().nextInt(0, 3);
-                    randomPhotoIndexes[pos] = correctIndex;
-                    correctIndex = pos;
-                }
-            }
-
-            // Populate thumbnailsArray with random meal photos
-            for (int i = 0; i < 3; i++) {
-                Glide.with(this).
-                        load(directoryListing[randomPhotoIndexes[i]]).
-                        into(thumbnailsArray[i]);
-            }
-        } else {
-            Toast.makeText(this, "Not enough photos to generate questions",
-                    Toast.LENGTH_LONG).show();
-        }
     }
 }
