@@ -4,6 +4,6 @@
     <string name="static_main">What you ate/drank recently</string>
     <string name="static_quiz">What did you eat...</string>
     <string name="sync_button">SYNC</string>
-    <string name="clr_mem_button">CLEAR MEMORY</string>
+    <string name="clr_mem_button">DELETE ALL PHOTOS</string>
     <string name="idk_button">I DON\'T KNOW</string>
 </resources>

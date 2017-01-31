@@ -1,6 +1,8 @@
 package com.example.phatd.mealtracker;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -45,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private File foodThumbnailsDir;
     private File[] directoryListing;
     private int thirdMostRecentThumbnailIndex, mostRecentThumbnailIndex,
-            thumbnailCounter, numTaps_clearMem, numTaps_takePhotos;
+            thumbnailCounter, numTaps_takePhotos;
 
     private StorageReference mStorageRef;
 
@@ -58,23 +60,55 @@ public class MainActivity extends AppCompatActivity {
 
         mStorageRef = FirebaseStorage.getInstance().getReference();
         numTaps_takePhotos = 1; // Initialize numTaps_takePhotos
-        numTaps_clearMem = 1; // Initialize numTaps_clearMem
 
-        // Refresh button setup
+        // Sync button setup
         Button syncButton = (Button) findViewById(R.id.sync);
         syncButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                syncPhotos();
+                // TODO: add user auth verification
+                if (1 == 2) {
+                    syncPhotos();
+                } else {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setMessage("You don't have permission to use this feature.")
+                            .setTitle("No permission");
+                    AlertDialog dialog = builder.create();
+                    dialog.show();
+                }
             }
         });
 
-        // Clear-memory button setup
-        Button clearMemory = (Button) findViewById(R.id.clear_memory);
-        clearMemory.setOnClickListener(new View.OnClickListener() {
+        // Delete-all-photos button setup
+        Button deletePhotos = (Button) findViewById(R.id.delete_all_photos);
+        deletePhotos.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                clearMemory();
+                //region Create dialog to confirm deletion
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setCancelable(true);
+                builder.setTitle("Delete all photos");
+                builder.setMessage("Are you sure you want to delete all meal photos?");
+                builder.setPositiveButton("Yes",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                deleteAllPhotos();
+                                thumbnailSetup();
+                                sortMealPhotos();
+                                updateMealThumbnails();
+                            }
+                        });
+                builder.setNegativeButton("No",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                // do nothing
+                            }
+                        });
+                AlertDialog dialog = builder.create();
+                dialog.show();
+                //endregion
             }
         });
 
@@ -98,13 +132,15 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Get all images in folder and put it into ImageView holder
+        thumbnailSetup();
+        sortMealPhotos();
         updateMealThumbnails();
     }
 
     //region Functionalities for all buttons
     // Redirect to QuizActivity
     private void goToQuiz() {
-        if (directoryListing.length != 0) {
+        if (directoryListing.length >= 3) {
             Intent goToQuizActivity = new Intent(this, QuizActivity.class);
             startActivity(goToQuizActivity);
         } else {
@@ -128,24 +164,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Delete all photos in the directory
-    private void clearMemory() {
-        if (numTaps_clearMem == 2) {
-            for (File f : foodThumbnailsDir.listFiles())
-                f.delete();
-            numTaps_clearMem = 1;
-            updateMealThumbnails();
-        } else {
-            Toast.makeText(MainActivity.this, "Tap again to clear memory",
-                    Toast.LENGTH_SHORT).show();
-            numTaps_clearMem = 2;
-            // TODO: Add delay for resetting the numTaps_clearMem
-        }
+    private void deleteAllPhotos() {
+        for (File f : foodThumbnailsDir.listFiles())
+            f.delete();
     }
 
     // Tap twice to take photo of meal
     private void checkNumTapsToOpenCamera() {
         if (numTaps_takePhotos == 2) {
             handleCameraPermission();
+            thumbnailSetup();
+            sortMealPhotos();
             updateMealThumbnails();
         } else {
             Toast.makeText(MainActivity.this, "Tap again to take photo of a meal",
@@ -180,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Set up indexes for the 3 most recent meal photos
     // If there are less than 3 photos, use all of them
-    private void thumbnailIndexSetup() {
+    private void setupRecentThumbnailIndexes() {
         thumbnailCounter = 0;
         mostRecentThumbnailIndex = directoryListing.length - 1;
         if (directoryListing.length > 3) {
@@ -193,11 +222,8 @@ public class MainActivity extends AppCompatActivity {
     // Load all photos into thumbnail holders
     // If there are no photos, display nothing
     private void updateMealThumbnails() {
-        thumbnailSetup();
-        sortMealPhotos();
-
         if (directoryListing.length != 0) {
-            thumbnailIndexSetup();
+            setupRecentThumbnailIndexes();
 
             // Start from left to right, add the most recent thumbnail
             // first to the third most recent thumbnail last (if exists)
@@ -208,10 +234,9 @@ public class MainActivity extends AppCompatActivity {
                         into(thumbnailsArray[thumbnailCounter]);
                 thumbnailCounter++;
             }
-        }
-
-        // If there's nothing in the thumbnail folder, set all ImageView holders to transparent
-        else {
+        } else {
+            // If there's nothing in the thumbnail folder,
+            // set all ImageView holders to transparent
             for (ImageView thumbnail : thumbnailsArray) {
                 thumbnail.setImageResource(android.R.color.transparent);
             }

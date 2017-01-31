@@ -60,7 +60,7 @@
         android:text="@string/clr_mem_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/clear_memory"
+        android:id="@+id/delete_all_photos"
         android:layout_below="@+id/sync"
         android:layout_alignParentStart="true" />
 
