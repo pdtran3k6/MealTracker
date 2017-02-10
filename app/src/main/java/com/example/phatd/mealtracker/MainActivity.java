@@ -40,14 +40,14 @@ import java.util.Date;
 public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 1234567;
+    private static final int CAMERA_CAPTURE_IMAGE_REQUEST_CODE = 1;
 
     private ImageView leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail;
     private ImageView[] thumbnailsArray;
 
     private File foodThumbnailsDir;
     private File[] directoryListing;
-    private int thirdMostRecentThumbnailIndex, mostRecentThumbnailIndex,
-            thumbnailCounter, numTaps_takePhotos;
+    private int mostRecentThumbnailIndex, thumbnailCounter, numTaps_takePhotos;
 
     private StorageReference mStorageRef;
 
@@ -67,12 +67,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 // TODO: add user auth verification
-                if (1 == 2) {
+                if (false) {
                     syncPhotos();
                 } else {
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                    builder.setMessage("You don't have permission to use this feature.")
-                            .setTitle("No permission");
+                    builder.setMessage("I'm working on this feature. Thanks for your interest")
+                            .setTitle("Thank you!");
                     AlertDialog dialog = builder.create();
                     dialog.show();
                 }
@@ -133,6 +133,20 @@ public class MainActivity extends AppCompatActivity {
 
         // Get all images in folder and put it into ImageView holder
         thumbnailSetup();
+        sortMealPhotos();
+        updateMealThumbnails();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sortMealPhotos();
+        updateMealThumbnails();
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
         sortMealPhotos();
         updateMealThumbnails();
     }
@@ -203,35 +217,33 @@ public class MainActivity extends AppCompatActivity {
         // Get directory path & generate a File[] that contains all meal thumbnails
         foodThumbnailsDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         directoryListing = foodThumbnailsDir.listFiles();
-
         Arrays.sort(directoryListing, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
-    }
-
-    // Set up indexes for the 3 most recent meal photos
-    // If there are less than 3 photos, use all of them
-    private void setupRecentThumbnailIndexes() {
-        thumbnailCounter = 0;
-        mostRecentThumbnailIndex = directoryListing.length - 1;
-        if (directoryListing.length > 3) {
-            thirdMostRecentThumbnailIndex = directoryListing.length - 3;
-        } else {
-            thirdMostRecentThumbnailIndex = 0;
-        }
     }
 
     // Load all photos into thumbnail holders
     // If there are no photos, display nothing
     private void updateMealThumbnails() {
         if (directoryListing.length != 0) {
-            setupRecentThumbnailIndexes();
+            thumbnailCounter = 0;
+            mostRecentThumbnailIndex = directoryListing.length - 1;
 
             // Start from left to right, add the most recent thumbnail
             // first to the third most recent thumbnail last (if exists)
             // and display them in ImageView
-            for (int i = mostRecentThumbnailIndex; i >= thirdMostRecentThumbnailIndex; i--) {
-                Glide.with(this).
-                        load(directoryListing[i]).
-                        into(thumbnailsArray[thumbnailCounter]);
+            while (thumbnailCounter <= 2 && directoryListing[mostRecentThumbnailIndex].exists()) {
+                // The file doesn't contain any photos (hence size 0), delete it
+                if (directoryListing[mostRecentThumbnailIndex].length() != 0) {
+                    Glide.with(this).
+                            load(directoryListing[mostRecentThumbnailIndex]).
+                            into(thumbnailsArray[thumbnailCounter]);
+                } else {
+                    // After the file gets deleted, go to the next most recent file
+                    // without incrementing the thumbnailCounter
+                    directoryListing[mostRecentThumbnailIndex].delete();
+                    mostRecentThumbnailIndex--;
+                    continue;
+                }
+                mostRecentThumbnailIndex--;
                 thumbnailCounter++;
             }
         } else {
@@ -245,9 +257,6 @@ public class MainActivity extends AppCompatActivity {
     //endregion
 
     //region Capture photos
-    //Save full-sized photos on the phone
-    String mCurrentPhotoPath;
-
     // Create image file for meal
     private File createImageFile() throws IOException {
         // Create an image file name that is collision-resistant
@@ -259,9 +268,6 @@ public class MainActivity extends AppCompatActivity {
                 ".jpg",          //suffix
                 storageDir       //directory
         );
-
-        // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
         return image;
     }
 
@@ -285,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
                         "com.example.phatd.mealtracker.fileprovider",
                         photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                startActivityForResult(takePictureIntent, RESULT_OK);
+                startActivityForResult(takePictureIntent, CAMERA_CAPTURE_IMAGE_REQUEST_CODE);
             }
         }
     }
@@ -331,7 +337,6 @@ public class MainActivity extends AppCompatActivity {
     //endregion
 
     // region Set up menu, permissions, etc.
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -375,5 +380,4 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-    //endregion
 }

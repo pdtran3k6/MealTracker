@@ -1,8 +1,9 @@
 package com.example.phatd.mealtracker;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Environment;
-import android.support.v4.content.ContextCompat;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -30,6 +31,7 @@ public class QuizActivity extends AppCompatActivity {
     private File foodThumbnailsDir;
     private File correctPhoto;
     private int correctIndex;
+    private boolean answered;
 
     private int green;
     private int red;
@@ -37,7 +39,9 @@ public class QuizActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_quiz);
+        setContentView(R.layout.content_quiz);
+
+        answered = false;
 
         // I-don't-know button setup
         Button iDontKnowButton = (Button) findViewById(R.id.idontknow);
@@ -59,25 +63,44 @@ public class QuizActivity extends AppCompatActivity {
         generateThumbnails();
     }
 
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        answered = false;
+    }
+
     private void revealCorrectAnswer(int chosenIndex) {
         int displayPos = correctIndex + 1;
         red = Color.argb(70, 255, 61, 61);
         green = Color.argb(70, 26, 255, 0);
 
-        if (chosenIndex == -1) {
-            Toast.makeText(this, "This is the correct answer. " +
-                            "Be more aware of what you eat next time",
-                    Toast.LENGTH_SHORT).show();
-            thumbnailsArray[correctIndex].setColorFilter(green);
-        } else if (chosenIndex == correctIndex) {
-            Toast.makeText(this, "Congratulations. It's the correct answer",
-                    Toast.LENGTH_SHORT).show();
-            thumbnailsArray[chosenIndex].setColorFilter(green);
-        } else {
-            Toast.makeText(this, "The correct answer was photo number " + displayPos,
-                    Toast.LENGTH_SHORT).show();
-            thumbnailsArray[chosenIndex].setColorFilter(red);
-            thumbnailsArray[correctIndex].setColorFilter(green);
+        if (!answered) {
+            if (chosenIndex == -1) {
+                Toast.makeText(this, "This is the correct answer. " +
+                                "Be more aware of what you eat next time",
+                        Toast.LENGTH_SHORT).show();
+                thumbnailsArray[correctIndex].setColorFilter(green);
+            } else if (chosenIndex == correctIndex) {
+                Toast.makeText(this, "Congratulations. It's the correct answer",
+                        Toast.LENGTH_SHORT).show();
+                thumbnailsArray[chosenIndex].setColorFilter(green);
+            } else {
+                Toast.makeText(this, "The correct answer was photo number " + displayPos,
+                        Toast.LENGTH_SHORT).show();
+                thumbnailsArray[chosenIndex].setColorFilter(red);
+                thumbnailsArray[correctIndex].setColorFilter(green);
+            }
+            answered = true;
+            Snackbar.make(findViewById(android.R.id.content), "Points updated",
+                    Snackbar.LENGTH_INDEFINITE)
+                    .setAction("BACK", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            Intent goToMainActivity = new Intent(getApplicationContext(),
+                                    MainActivity.class);
+                            startActivity(goToMainActivity);
+                        }
+                    }).show();
         }
     }
 
