@@ -13,12 +13,22 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:id="@+id/points"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:layout_marginTop="10dp"
+        android:textSize="32dp"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:id="@+id/question"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         android:text="@string/static_quiz"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
-        android:layout_marginTop="68dp" />
+        android:layout_marginTop="68dp"
+        android:layout_below="@+id/points" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -63,5 +73,4 @@
         android:layout_centerHorizontal="true"
         android:layout_marginTop="30dp"
         android:id="@+id/idontknow" />
-
 </RelativeLayout>

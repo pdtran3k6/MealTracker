@@ -1,6 +1,8 @@
 package com.example.phatd.mealtracker;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Environment;
 import android.support.design.widget.Snackbar;
@@ -26,13 +28,20 @@ public class QuizActivity extends AppCompatActivity {
     private ImageView[] thumbnailsArray;
     private ImageView leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail;
     private TextView question_DayAndTime;
+    private TextView pointsTV;
 
     private File[] directoryListing;
     private File foodThumbnailsDir;
     private File correctPhoto;
     private int correctIndex;
+    private int points;
     private boolean answered;
+    private boolean correct;
 
+    private static int IMAGEVIEW_0 = 0;
+    private static int IMAGEVIEW_1 = 1;
+    private static int IMAGEVIEW_2 = 2;
+    private static int NO_ANSWER = -1;
     private int green;
     private int red;
 
@@ -40,26 +49,23 @@ public class QuizActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.content_quiz);
-
+        question_DayAndTime = (TextView) findViewById(R.id.question_DayAndTime);
+        pointsTV = (TextView) findViewById(R.id.points);
         answered = false;
+        points = getCurrPoints();
 
         // I-don't-know button setup
         Button iDontKnowButton = (Button) findViewById(R.id.idontknow);
         iDontKnowButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                revealCorrectAnswer(-1);
-                updatePoints();
+                revealCorrectAnswer(NO_ANSWER);
+                genSnackbar();
+                updatePoints(correct);
             }
         });
 
-        // question_DayAndTime TextView setup
-        question_DayAndTime = (TextView) findViewById(R.id.question_DayAndTime);
-
-        // Populate question_DayAndTime
         generateQuestions();
-
-        // Populate all ImageView food thumbnails
         generateThumbnails();
     }
 
@@ -75,37 +81,70 @@ public class QuizActivity extends AppCompatActivity {
         green = Color.argb(70, 26, 255, 0);
 
         if (!answered) {
-            if (chosenIndex == -1) {
+            if (chosenIndex == NO_ANSWER) {
                 Toast.makeText(this, "This is the correct answer. " +
                                 "Be more aware of what you eat next time",
                         Toast.LENGTH_SHORT).show();
                 thumbnailsArray[correctIndex].setColorFilter(green);
+                correct = false;
             } else if (chosenIndex == correctIndex) {
                 Toast.makeText(this, "Congratulations. It's the correct answer",
                         Toast.LENGTH_SHORT).show();
                 thumbnailsArray[chosenIndex].setColorFilter(green);
+                correct = true;
             } else {
                 Toast.makeText(this, "The correct answer was photo number " + displayPos,
                         Toast.LENGTH_SHORT).show();
                 thumbnailsArray[chosenIndex].setColorFilter(red);
                 thumbnailsArray[correctIndex].setColorFilter(green);
+                correct = false;
             }
             answered = true;
-            Snackbar.make(findViewById(android.R.id.content), "Points updated",
-                    Snackbar.LENGTH_INDEFINITE)
-                    .setAction("BACK", new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            Intent goToMainActivity = new Intent(getApplicationContext(),
-                                    MainActivity.class);
-                            startActivity(goToMainActivity);
-                        }
-                    }).show();
         }
     }
 
-    private void updatePoints() {
 
+    private void genSnackbar() {
+        Snackbar.make(findViewById(android.R.id.content), "",
+            Snackbar.LENGTH_INDEFINITE)
+            .setAction("BACK", new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent goToMainActivity = new Intent(getApplicationContext(),
+                            MainActivity.class);
+                    startActivity(goToMainActivity);
+                }
+            }).show();
+    }
+
+    private int getCurrPoints() {
+        int localPoints;
+        SharedPreferences myPref = getSharedPreferences("points", 0);
+        if (myPref.contains("points")) {
+            localPoints = Integer.parseInt(myPref.getString("points", ""));
+        } else {
+            localPoints = 0;
+        }
+
+        String currentPoints = Integer.toString(localPoints);
+        pointsTV.setText("Current point is: " + currentPoints);
+        return localPoints;
+    }
+
+    private void updatePoints(boolean correct) {
+        SharedPreferences myPref = getSharedPreferences("points", 0);
+        SharedPreferences.Editor editor = myPref.edit();
+
+        if (correct) {
+            editor.putString("points", Integer.toString(++points));
+            editor.commit();
+            getCurrPoints();
+            return;
+        }
+
+        editor.putString("points", Integer.toString(--points));
+        editor.commit();
+        getCurrPoints();
     }
 
     private void generateQuestions() {
@@ -132,12 +171,10 @@ public class QuizActivity extends AppCompatActivity {
         int totalNumPhotos = directoryListing.length;
         Integer[] randomPhotoIndexes = new Integer[totalNumPhotos];
 
-        // Populate all meal photos' indexes to the array
         for (int i = 0; i < totalNumPhotos; i++) {
             randomPhotoIndexes[i] = i;
         }
 
-        // Randomize all elements
         Collections.shuffle(Arrays.asList(randomPhotoIndexes));
 
         for (int k = 0; k < 3; k++) {
@@ -154,7 +191,6 @@ public class QuizActivity extends AppCompatActivity {
             }
         }
 
-        // Populate thumbnailsArray with random meal photos
         for (int i = 0; i < 3; i++) {
             Glide.with(this).
                     load(directoryListing[randomPhotoIndexes[i]]).
@@ -163,33 +199,34 @@ public class QuizActivity extends AppCompatActivity {
     }
 
     private void setupThumbnails() {
-        // Set each thumbnail to its corresponding variable
         leftFoodThumbnail = (ImageView) findViewById(R.id.leftThumbnail);
         leftFoodThumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                revealCorrectAnswer(0);
-                updatePoints();
+                revealCorrectAnswer(IMAGEVIEW_0);
+                genSnackbar();
+                updatePoints(correct);
             }
         });
         centerFoodThumbnail = (ImageView) findViewById(R.id.centerThumbnail);
         centerFoodThumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                revealCorrectAnswer(1);
-                updatePoints();
+                revealCorrectAnswer(IMAGEVIEW_1);
+                genSnackbar();
+                updatePoints(correct);
             }
         });
         rightFoodThumbnail = (ImageView) findViewById(R.id.rightThumbnail);
         rightFoodThumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                revealCorrectAnswer(2);
-                updatePoints();
+                revealCorrectAnswer(IMAGEVIEW_2);
+                genSnackbar();
+                updatePoints(correct);
             }
         });
 
-        // Put all thumbnails into an array
         thumbnailsArray = new ImageView[]
                 {leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail};
     }
