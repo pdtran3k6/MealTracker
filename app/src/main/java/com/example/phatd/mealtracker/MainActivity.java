@@ -39,17 +39,16 @@ import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int CAMERA_PERMISSION_REQUEST_CODE = 1234567;
-    private static final int CAMERA_CAPTURE_IMAGE_REQUEST_CODE = 1;
+    ImageView leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail;
+    ImageView[] thumbnailsArray;
 
-    private ImageView leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail;
-    private ImageView[] thumbnailsArray;
+    File foodThumbnailsDir;
+    File[] directoryListing;
+    int mostRecentThumbnailIndex, thumbnailCounter, numTaps_takePhotos;
+    StorageReference mStorageRef;
 
-    private File foodThumbnailsDir;
-    private File[] directoryListing;
-    private int mostRecentThumbnailIndex, thumbnailCounter, numTaps_takePhotos;
-
-    private StorageReference mStorageRef;
+    static int CAMERA_PERMISSION_REQUEST_CODE = 1234567;
+    static int CAMERA_CAPTURE_IMAGE_REQUEST_CODE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,7 +130,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Get all images in folder and put it into ImageView holder
         thumbnailSetup();
         sortMealPhotos();
         updateMealThumbnails();
@@ -151,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
         updateMealThumbnails();
     }
 
-    //region Functionalities for all buttons
+    //region Methods for all buttons
     // Redirect to QuizActivity
     private void goToQuiz() {
         if (directoryListing.length >= 3) {
@@ -230,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
             // Start from left to right, add the most recent thumbnail
             // first to the third most recent thumbnail last (if exists)
             // and display them in ImageView
-            while (thumbnailCounter <= 2 && directoryListing[mostRecentThumbnailIndex].exists()) {
+            while (thumbnailCounter <= 2 && mostRecentThumbnailIndex >= 0) {
                 // The file doesn't contain any photos (hence size 0), delete it
                 if (directoryListing[mostRecentThumbnailIndex].length() != 0) {
                     Glide.with(this).
@@ -263,19 +261,19 @@ public class MainActivity extends AppCompatActivity {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmm").format(new Date());
         String imageFileName = "Meal_" + timeStamp + "_";
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
+
+        return File.createTempFile(
                 imageFileName,   //prefix
                 ".jpg",          //suffix
                 storageDir       //directory
         );
-        return image;
     }
 
-    // Capture image of meal
+
     private void invokeTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
-        //Ensure that there's a camera activity to handle the intent
+        //Ensure that there's a camera to handle the intent
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
             // Create the File where the photo should go
             File photoFile = null;

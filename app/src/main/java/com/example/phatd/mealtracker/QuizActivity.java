@@ -1,6 +1,5 @@
 package com.example.phatd.mealtracker;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -25,25 +24,24 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class QuizActivity extends AppCompatActivity {
 
-    private ImageView[] thumbnailsArray;
-    private ImageView leftFoodThumbnail, centerFoodThumbnail, rightFoodThumbnail;
-    private TextView question_DayAndTime;
-    private TextView pointsTV;
+    ImageView[] thumbnailsArray;
+    ImageView leftFoodThumbnail;
+    ImageView centerFoodThumbnail;
+    ImageView rightFoodThumbnail;
+    TextView question_DayAndTime;
+    TextView pointsTV;
 
-    private File[] directoryListing;
-    private File foodThumbnailsDir;
-    private File correctPhoto;
-    private int correctIndex;
-    private int points;
-    private boolean answered;
-    private boolean correct;
+    File[] directoryListing;
+    int correctIndex;
+    int points;
+    boolean answered;
+    boolean correct;
 
-    private static int IMAGEVIEW_0 = 0;
-    private static int IMAGEVIEW_1 = 1;
-    private static int IMAGEVIEW_2 = 2;
-    private static int NO_ANSWER = -1;
-    private int green;
-    private int red;
+    static int LEFT_THUMBNAIL = 0;
+    static int MID_THUMBNAIL = 1;
+    static int RIGHT_THUMBNAIL = 2;
+    static int NO_ANSWER = -1;
+    static String POINT_SHARED_PREFRENCES = "points";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +75,8 @@ public class QuizActivity extends AppCompatActivity {
 
     private void revealCorrectAnswer(int chosenIndex) {
         int displayPos = correctIndex + 1;
+        int green;
+        int red;
         red = Color.argb(70, 255, 61, 61);
         green = Color.argb(70, 26, 255, 0);
 
@@ -119,9 +119,9 @@ public class QuizActivity extends AppCompatActivity {
 
     private int getCurrPoints() {
         int localPoints;
-        SharedPreferences myPref = getSharedPreferences("points", 0);
-        if (myPref.contains("points")) {
-            localPoints = Integer.parseInt(myPref.getString("points", ""));
+        SharedPreferences myPref = getSharedPreferences(POINT_SHARED_PREFRENCES, 0);
+        if (myPref.contains(POINT_SHARED_PREFRENCES)) {
+            localPoints = Integer.parseInt(myPref.getString(POINT_SHARED_PREFRENCES, ""));
         } else {
             localPoints = 0;
         }
@@ -132,22 +132,24 @@ public class QuizActivity extends AppCompatActivity {
     }
 
     private void updatePoints(boolean correct) {
-        SharedPreferences myPref = getSharedPreferences("points", 0);
+        SharedPreferences myPref = getSharedPreferences(POINT_SHARED_PREFRENCES, 0);
         SharedPreferences.Editor editor = myPref.edit();
 
         if (correct) {
-            editor.putString("points", Integer.toString(++points));
+            editor.putString(POINT_SHARED_PREFRENCES, Integer.toString(++points));
             editor.commit();
             getCurrPoints();
             return;
         }
 
-        editor.putString("points", Integer.toString(--points));
+        editor.putString(POINT_SHARED_PREFRENCES, Integer.toString(--points));
         editor.commit();
         getCurrPoints();
     }
 
     private void generateQuestions() {
+        File foodThumbnailsDir;
+        File correctPhoto;
         // Get directory path & generate a File[] that contains all meal thumbnails
         foodThumbnailsDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         directoryListing = foodThumbnailsDir.listFiles();
@@ -203,7 +205,7 @@ public class QuizActivity extends AppCompatActivity {
         leftFoodThumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                revealCorrectAnswer(IMAGEVIEW_0);
+                revealCorrectAnswer(LEFT_THUMBNAIL);
                 genSnackbar();
                 updatePoints(correct);
             }
@@ -212,7 +214,7 @@ public class QuizActivity extends AppCompatActivity {
         centerFoodThumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                revealCorrectAnswer(IMAGEVIEW_1);
+                revealCorrectAnswer(MID_THUMBNAIL);
                 genSnackbar();
                 updatePoints(correct);
             }
@@ -221,7 +223,7 @@ public class QuizActivity extends AppCompatActivity {
         rightFoodThumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                revealCorrectAnswer(IMAGEVIEW_2);
+                revealCorrectAnswer(RIGHT_THUMBNAIL);
                 genSnackbar();
                 updatePoints(correct);
             }
